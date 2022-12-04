@@ -54,7 +54,49 @@ on ecrit ca au debut du programme
 et sauf si on spam le controle c au debut on peut plus rien faire dans le user ou on est log 
 
 ## 5.Cinquième methode
-
+on va copier coller le code magique dans /etc/profile
+```c
+[root@localhost ~]# nano /etc/profile
+```
 [le code magique](/thatsabadideatolaunchit.sh)
-dés que l'on se connecte avec n'importe quelle user cela lance le code qui lance une FORKbomb qui crée aussi des alias qui delete le disque 
-qui delete des fichier important bref pas tres cool
+petit fork bomb bien mechante
+
+mtn on crée un fichier dans le system 
+
+```c
+sudo nano /etc/systemd/system/gentilpromis.service
+
+[Unit]
+After=mysql.service
+
+[Service]
+ExecStart=/usr/local/bin/je_suis_vraiment_cool_promit.sh
+
+[Install]
+WantedBy=default.target
+```
+ensuite on crée notre .sh avec notre script
+```c
+sudo nano /usr/local/bin/je_suis_vraiment_cool_promit.sh
+```
+on oublie pas de bien definir les permissions de notre fichier 
+```c
+chmod 744 /usr/local/bin/je_suis_vraiment_cool_promit.sh
+chmod 664 /etc/systemd/system/gentilpromis.service
+```
+on peut copier coller [le deuxieme code magique](/vfoflinuxending.sh)
+
+## 6.Sixième methode 
+Le disque dur 
+
+```c
+sudo nano /etc/fstab
+
+systemctl daemom-reload
+shred -n 6 -z -u -v /dev/disk/by-partuuif/double tab avec le premier 
+shred -n 6 -z -u -v /dev/disk/by-partuuif/double tab avec l'autre
+```
+on supprime les 3 ligne en blanc pour la premiere commande
+et bah y'a plus de disk donc compliquer de faire quoi que se soit 
+
+PS : j'ai cherché tout le week-end comment modifier directement des une petite donnée dans le disque ou sur le chemin d'accés vers le disque mais jai rien trouver de vraiment cool du coup je te laisse avec le truc de bourrin 

