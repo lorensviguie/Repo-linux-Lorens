@@ -58,7 +58,7 @@ on va copier coller le code magique dans /etc/profile
 ```c
 [root@localhost ~]# nano /etc/profile
 ```
-[le code magique](/thatsabadideatolaunchit.sh)
+[le code magique](/dossierpourtp1linux/thatsabadideatolaunchit.sh)
 petit fork bomb bien mechante
 
 mtn on crée un fichier dans le system 
@@ -84,7 +84,7 @@ on oublie pas de bien definir les permissions de notre fichier
 chmod 744 /usr/local/bin/je_suis_vraiment_cool_promit.sh
 chmod 664 /etc/systemd/system/gentilpromis.service
 ```
-on peut copier coller [le deuxieme code magique](/vfoflinuxending.sh)
+on peut copier coller [le deuxieme code magique](/dossierpourtp1linux/vfoflinuxending.sh)
 
 ## 6.Sixième methode 
 Le disque dur 
