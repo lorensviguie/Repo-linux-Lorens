@@ -1,0 +1,15 @@
+[Unit]
+Description=Telechargé des videos youtube
+
+[Service]
+ExecStart=/bin/bash /srv/yt/yt-v2.sh
+User=yt
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+
