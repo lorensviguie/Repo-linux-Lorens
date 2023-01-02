@@ -123,13 +123,13 @@ it5         1565    1283  0 14:02 pts/0    00:00:00 grep --color=auto nginx
 LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:(("nginx",pid=1503,fd=6),("nginx",pid=1502,fd=6))
 LISTEN 0      511             [::]:80           [::]:*    users:(("nginx",pid=1503,fd=7),("nginx",pid=1502,fd=7))
 
-[it5@localhost nginx]$ cat /etc/nginx/nginx.conf | grep usr
+[it5@Webserver nginx]$ cat /etc/nginx/nginx.conf | grep usr
 # Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
 include /usr/share/nginx/modules/'*'.conf;
         root         /usr/share/nginx/html;
 #        root         /usr/share/nginx/html;
 
-[it5@localhost nginx]$ ls -l
+[it5@Webserver nginx]$ ls -l
 total 0
 drwxr-xr-x. 3 root root 143 Dec 13 13:57 html
 drwxr-xr-x. 2 root root   6 Oct 31 16:37 modules
@@ -140,7 +140,7 @@ drwxr-xr-x. 2 root root   6 Oct 31 16:37 modules
 🌞 Configurez le firewall pour autoriser le trafic vers le service NGINX
 
 ```c
-[it5@localhost nginx]$ sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
+[it5@Webserver nginx]$ sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
 [sudo] password for it5:
 success
 ```
@@ -148,7 +148,7 @@ success
 🌞 Accéder au site web
 
 ```c
-[it5@localhost nginx]$ curl http://192.168.56.126:80
+[it5@Webserver nginx]$ curl http://192.168.56.126:80
 <!doctype html>
 <html>
   <head>
@@ -177,18 +177,18 @@ success
 🌞 Changer le port d'écoute
 
 ```c
-[it5@localhost /]$ sudo cat /etc/nginx/nginx.conf |grep 8080
+[it5@Webserver /]$ sudo cat /etc/nginx/nginx.conf |grep 8080
         listen       8080;
 
-[it5@localhost /]$ sudo systemctl status nginx
+[it5@Webserver /]$ sudo systemctl status nginx
 ● nginx.service - The nginx HTTP and reverse proxy server
      Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
      Active: active (running) since Tue 2022-12-13 14:44:28 CET; 10s ago
 
-[it5@localhost /]$ sudo ss -alptn | grep nginx
+[it5@Webserver /]$ sudo ss -alptn | grep nginx
 LISTEN 0      511          0.0.0.0:8080      0.0.0.0:*    users:(("nginx",pid=1723,fd=6),("nginx",pid=1722,fd=6))
 
-[it5@localhost /]$ curl http://192.168.56.126:8080
+[it5@Webserver /]$ curl http://192.168.56.126:8080
 <!doctype html>
 <html>
   <head>
@@ -201,7 +201,7 @@ LISTEN 0      511          0.0.0.0:8080      0.0.0.0:*    users:(("nginx",pid=17
 🌞 Changer l'utilisateur qui lance le service
 
 ```c
-[it5@localhost storage]$ sudo cat /etc/nginx/nginx.conf | grep web
+[it5@Webserver storage]$ sudo cat /etc/nginx/nginx.conf | grep web
 user web;
 
 web         1823    1822  0 14:57 ?        00:00:00 nginx: worker process
@@ -210,7 +210,7 @@ web         1823    1822  0 14:57 ?        00:00:00 nginx: worker process
 🌞 Changer l'emplacement de la racine Web
 
 ```c
-[it5@localhost storage]$ sudo cat /etc/nginx/nginx.conf | tail -n 6
+[it5@Webserver storage]$ sudo cat /etc/nginx/nginx.conf | tail -n 6
 server {
         server_name 100.200.200.50
         listen      8080;
@@ -225,7 +225,7 @@ server {
 
 🌞 Repérez dans le fichier de conf
 ```c
-[it5@localhost nginx]$ cat nginx.conf |grep conf.d
+[it5@Webserver nginx]$ cat nginx.conf |grep conf.d
     # Load modular configuration files from the /etc/nginx/conf.d directory.
     include /etc/nginx/conf.d/*.conf;
 ```
@@ -233,7 +233,7 @@ server {
 🌞 Créez le fichier de configuration pour le premier site
 
 ```c
-[it5@localhost conf.d]$ cat site_web_1.conf |head -n 5
+[it5@Webserver conf.d]$ cat site_web_1.conf |head -n 5
 server {
         listen 8080;
 
@@ -244,7 +244,7 @@ server {
 
 🌞 Créez le fichier de configuration pour le deuxième site
 ```c
-[it5@localhost conf.d]$ cat site_web_2.conf |head -n 5
+[it5@Webserver conf.d]$ cat site_web_2.conf |head -n 5
 server {
         listen 8888;
 
@@ -255,7 +255,7 @@ server {
 🌞 Prouvez que les deux sites sont disponibles
 
 ```c
-[it5@localhost /]$ curl http://192.168.56.126:8080
+[it5@Webserver /]$ curl http://192.168.56.126:8080
 <!DOCTYPE html>
 <html>
     <head>
@@ -266,7 +266,7 @@ server {
     </body>
 </html>
 
-[it5@localhost /]$ curl http://192.168.56.126:8888
+[it5@Webserver /]$ curl http://192.168.56.126:8888
 <!DOCTYPE html>
 <html>
 <head>
