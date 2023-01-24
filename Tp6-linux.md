@@ -287,3 +287,159 @@ success
 # Module 3 : Fail2Ban
 
 🌞 Faites en sorte que :
+
+```c
+[it5@db ~]$ sudo dnf install epel-release
+[it5@db ~]$ sudo dnf install fail2ban fail2ban-firewalld
+[it5@db ~]$ sudo systemctl start fail2ban
+[it5@db ~]$ sudo systemctl status fail2ban
+● fail2ban.service - Fail2Ban Service
+     Loaded: loaded (/usr/lib/systemd/system/fail2ban.service; disabled; vendor preset: disabled)
+     Active: active (running) since Wed 2023-01-18 00:35:09 CET; 7s ago
+       Docs: man:fail2ban(1)
+    Process: 12584 ExecStartPre=/bin/mkdir -p /run/fail2ban (code=exited, status=0/SUCCESS)
+   Main PID: 12585 (fail2ban-server)
+      Tasks: 3 (limit: 5877)
+     Memory: 10.3M
+        CPU: 60ms
+     CGroup: /system.slice/fail2ban.service
+             └─12585 /usr/bin/python3 -s /usr/bin/fail2ban-server -xf start
+
+Jan 18 00:35:08 db.linux.tp6 systemd[1]: Starting Fail2Ban Service...
+Jan 18 00:35:09 db.linux.tp6 systemd[1]: Started Fail2Ban Service.
+Jan 18 00:35:09 db.linux.tp6 fail2ban-server[12585]: 2023-01-18 00:35:09,059 fail2ban.configreader   [12585]: WARNING 'allowipv6' not defined in 'Definition'. Using default one: 'auto'
+Jan 18 00:35:09 db.linux.tp6 fail2ban-server[12585]: Server ready
+[it5@db ~]$ sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+[it5@db ~]$ sudo mv /etc/fail2ban/jail.d/00-firewalld.conf /etc/fail2ban/jail.d/00-firewalld.local
+[it5@db ~]$ sudo systemctl restart fail2ban
+
+[it5@db ~]$ sudo cat /etc/fail2ban/jail.d/sshd.local
+[sshd]
+enabled = true
+
+# Override the default global configuration
+# for specific jail sshd
+bantime = 1d
+maxretry = 3
+findtime = 1m
+[it5@db ~]$ sudo systemctl restart fail2ban
+[it5@db ~]$ sudo fail2ban-client get sshd maxretry
+3
+[it5@db ~]$ sudo fail2ban-client get sshd findtime
+60
+[it5@db ~]$ sudo fail2ban-client status sshd
+Status for the jail: sshd
+|- Filter
+|  |- Currently failed:	0
+|  |- Total failed:	3
+|  `- Journal matches:	_SYSTEMD_UNIT=sshd.service + _COMM=sshd
+`- Actions
+   |- Currently banned:	1
+   |- Total banned:	1
+   `- Banned IP list:	172.16.72.11
+[it5@db ~]$ sudo firewall-cmd --list-all | grep rule
+  rich rules: 
+	rule family="ipv4" source address="172.16.72.11" port port="ssh" protocol="tcp" reject type="icmp-port-unreachable"
+[it5@db ~]$ sudo fail2ban-client unban 172.16.72.11
+1
+[it5@db ~]$ sudo fail2ban-client status sshd
+Status for the jail: sshd
+|- Filter
+|  |- Currently failed:	0
+|  |- Total failed:	0
+|  `- Journal matches:	_SYSTEMD_UNIT=sshd.service + _COMM=sshd
+`- Actions
+   |- Currently banned:	0
+   |- Total banned:	1
+   `- Banned IP list:	
+```
+
+
+# Module 4 : Monitoring
+
+🌞 Installer Netdata
+
+```c
+[it5@web backup]$ sudo dnf install wget
+[it5@web backup]$ sudo wget -O /tmp/netdata-kickstart.sh https://my-netdata.io/kickstart.sh && sh /tmp/netdata-kickstart.sh
+[it5@web backup]$ sudo firewall-cmd --permanent --add-port=19999/tcp
+success
+[it5@web backup]$ sudo firewall-cmd --reload
+success
+[it5@web backup]$ ss -lapten | grep netdata                         
+LISTEN    0      4096              0.0.0.0:19999            0.0.0.0:*     uid:989 ino:45722 sk:5 cgroup:/system.slice/netdata.service <-> 
+
+
+```
+
+🌞 Une fois Netdata installé et fonctionnel, déterminer :
+
+```c
+[it5@web backup]$ ps -ef | grep netdata
+netdata     4166       1  1 02:03 ?        00:00:09 /usr/sbin/netdata -P /run/netdata/netdata.pid -D
+netdata     4168    4166  0 02:03 ?        00:00:00 /usr/sbin/netdata --special-spawn-server
+netdata     4381    4166  0 02:03 ?        00:00:00 bash /usr/libexec/netdata/plugins.d/tc-qos-helper.sh 1
+netdata     4394    4166  1 02:03 ?        00:00:05 /usr/libexec/netdata/plugins.d/apps.plugin 1
+netdata     4396    4166  0 02:03 ?        00:00:02 /usr/libexec/netdata/plugins.d/go.d.plugin 1
+[it5@web backup]$ ss -lapten | grep netdata
+LISTEN    0      4096            127.0.0.1:8125             0.0.0.0:*     uid:989 ino:46705 sk:4 cgroup:/system.slice/netdata.service <->                              
+LISTEN    0      4096              0.0.0.0:19999            0.0.0.0:*     uid:989 ino:45722 sk:5 cgroup:/system.slice/netdata.service <->                              
+ESTAB     0      0            172.16.72.11:19999        172.16.72.1:53094 timer:(keepalive,114min,0) uid:989 ino:52220 sk:54 cgroup:/system.slice/netdata.service <->  
+ESTAB     0      0               127.0.0.1:38372          127.0.0.1:80    timer:(keepalive,2.450ms,0) uid:989 ino:56662 sk:11e cgroup:/system.slice/netdata.service <->
+LISTEN    0      4096                [::1]:8125                [::]:*     uid:989 ino:46704 sk:86 cgroup:/system.slice/netdata.service v6only:1 <->                    
+LISTEN    0      4096                 [::]:19999               [::]:*     uid:989 ino:45723 sk:87 cgroup:/system.slice/netdata.service v6only:1 <->                    
+ESTAB     0      0                   [::1]:46368              [::1]:80    timer:(keepalive,450ms,0) uid:989 ino:56642 sk:126 cgroup:/system.slice/netdata.service <-> 
+[it5@web backup]$ sudo journalctl -xe -u netdata -f
+Jan 18 02:03:11 web.linux.tp6 systemd[1]: Starting Real time performance monitoring...
+░░ Subject: A start job for unit netdata.service has begun execution
+░░ Defined-By: systemd
+░░ Support: https://access.redhat.com/support
+```
+
+🌞 Configurer Netdata pour qu'il vous envoie des alertes
+
+```c
+[it5@web netdata]$ sudo cat /etc/netdata/health_alarm_notify.conf 
+###############################################################################
+# sending discord notifications
+
+# note: multiple recipients can be given like this:
+#                  "CHANNEL1 CHANNEL2 ..."
+
+# enable/disable sending discord notifications
+SEND_DISCORD="YES"
+
+# Create a webhook by following the official documentation -
+# https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks
+DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1065194940486926376/1qS6MY4-RWJlT6UW_0j2XO_d0SCacO29HGgGJGErnBF8jIijFinzvDTjbcD4yVM4YUYW"
+
+# if a role's recipients are not configured, a notification will be send to
+# this discord channel (empty = do not send a notification for unconfigured
+# roles):
+DEFAULT_RECIPIENT_DISCORD="alert"
+```
+
+🌞 Vérifier que les alertes fonctionnent
+
+```c
+[it5@web netdata]$ sudo cat health.d/cpu.conf | head -n 10
+
+# you can disable an alarm notification by setting the 'to' line to: silent
+
+ template: 10min_cpu_usage
+       on: system.cpu
+    class: Utilization
+     type: System
+component: CPU
+       os: linux
+    hosts: *
+[it5@web netdata]$ sudo cat health.d/cpu_usage.conf 
+alarm: cpu_usage
+on: system.cpu
+lookup : average -3s percentage foreach user,system
+units: %
+every: 10s
+warn: $this > 50
+crit: $this > 80
+[it5@web netdata]$ sudo stress --cpu 8 --io 4 --vm 2 --vm-bytes 128M --timeout 10s
+```
