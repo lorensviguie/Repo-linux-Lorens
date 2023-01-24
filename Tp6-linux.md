@@ -125,8 +125,89 @@ desolé pour les accents non affiché
 
 ## II. HTTPS
 
+🌞 Faire en sorte que NGINX force la connexion en HTTPS plutôt qu'HTTP
 
+```c
+[it5@proxy nginx]$ sudo mkdir prox
+[sudo] password for it5: 
+[it5@proxy prox]$ sudo openssl genrsa -out ssl_certificate.key 2048
+[it5@proxy prox]$ sudo openssl req -new -x509 -key ssl_certificate.key -out ssl_certificate.crt -days 365
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:FR
+State or Province Name (full name) []:.
+Locality Name (eg, city) [Default City]:.
+Organization Name (eg, company) [Default Company Ltd]:.
+Organizational Unit Name (eg, section) []:.
+Common Name (eg, your name or your server's hostname) []:proxy.linux.tp6'
+Email Address []:.
+[it5@proxy prox]$ ls
+ssl_certificate.crt  ssl_certificate.key
+[it5@proxy conf.d]$ sudo cat tp6.conf 
+[sudo] password for it5: 
+server {
+    listen 80;
+    server_name web.tp6.linux;
+    return 301 https://$host$request_uri;
+}
 
+server {
+    listen 443 ssl;
+    server_name web.tp6.linux;
+    ssl_certificate /etc/nginx/prox/ssl_certificate.crt;
+    ssl_certificate_key /etc/nginx/prox/ssl_certificate.key;
+    
+	location / {
+        # On définit des headers HTTP pour que le proxying se passe bien
+        proxy_set_header  Host $host;
+        proxy_set_header  X-Real-IP $remote_addr;
+        proxy_set_header  X-Forwarded-Proto https;
+        proxy_set_header  X-Forwarded-Host $remote_addr;
+        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # On définit la cible du proxying
+        proxy_pass http://172.16.72.11:80;
+    }
+
+    # Deux sections location recommandés par la doc NextCloud
+    location /.well-known/carddav {
+      return 301 $scheme://$host/remote.php/dav;
+    }
+
+    location /.well-known/caldav {
+      return 301 $scheme://$host/remote.php/dav;
+    }
+}
+[it5@proxy conf.d]$ sudo systemctl restart nginx
+[it5@proxy conf.d]$ sudo systemctl status nginx
+● nginx.service - The nginx HTTP and reverse proxy server
+     Loaded: loaded (/usr/lib/systemd/system/nginx.service; disabled; vendor preset: disabled)
+     Active: active (running) since Mon 2023-01-16 13:43:47 CET; 11s ago
+    Process: 1282 ExecStartPre=/usr/bin/rm -f /run/nginx.pid (code=exited, status=0/SUCCESS)
+    Process: 1283 ExecStartPre=/usr/sbin/nginx -t (code=exited, status=0/SUCCESS)
+    Process: 1284 ExecStart=/usr/sbin/nginx (code=exited, status=0/SUCCESS)
+   Main PID: 1285 (nginx)
+      Tasks: 2 (limit: 5878)
+     Memory: 2.6M
+        CPU: 26ms
+     CGroup: /system.slice/nginx.service
+             ├─1285 "nginx: master process /usr/sbin/nginx"
+             └─1286 "nginx: worker process"
+
+Jan 16 13:43:47 proxy.linux.tp6 systemd[1]: Starting The nginx HTTP and reverse proxy server...
+Jan 16 13:43:47 proxy.linux.tp6 nginx[1283]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+Jan 16 13:43:47 proxy.linux.tp6 nginx[1283]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+Jan 16 13:43:47 proxy.linux.tp6 systemd[1]: Started The nginx HTTP and reverse proxy server.
+[it5@proxy conf.d]$ sudo firewall-cmd --add-port=443/tcp --permanent 
+success
+[it5@proxy conf.d]$ sudo firewall-cmd --reload
+success
+```
 
 
 # Module 2 : Sauvegarde du système de fichiers
@@ -273,7 +354,21 @@ success
 success
 [it5@storage ~]$ sudo firewall-cmd --reload
 success
-
+[it5@storage ~]$ sudo firewall-cmd --list-all
+public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp0s1 enp0s2
+  sources: 
+  services: cockpit dhcpv6-client mountd nfs rpc-bind ssh
+  ports: 
+  protocols: 
+  forward: yes
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
 ```
 
 ### 2. Client NFS
@@ -281,7 +376,22 @@ success
 🌞 Installer un client NFS sur web.tp6.linux
 
 ```c
+[it5@web srv]$ sudo dnf install nfs-utils
+Complete!
+[it5@web srv]$ sudo mount 172.16.72.19:/srv/nfs_shares/web.tp6.linux/ /srv/backup/
+[it5@web srv]$ df -h | grep tp6
+172.16.72.19:/srv/nfs_shares/web.tp6.linux  5.6G  1.2G  4.5G  21% /srv/backup
+```
 
+🌞 Tester la restauration des données
+
+```c
+[it5@web backup]$ sudo unzip nextcloud-dirbkp_20230117.zip
+[it5@web nextcloud-dirbkp_20230117]$ sudo mv nextcloud-sqlbkp_20230117.bak /srv/backup/
+[it5@web backup]$ sudo mv nextcloud-dirbkp_20230117/ /srv/backup/
+[it5@web backup]$ sudo rsync -Aax nextcloud-dirbkp_20230117 nextcloud/
+[it5@web backup]$ mysql -h 172.16.72.12 -u nextcloud -ppewpewpew -e "DROP DATABASE nextcloud"
+mysql: [Warning] Using a password on the command line interface can be insecure.
 ```
 
 # Module 3 : Fail2Ban
